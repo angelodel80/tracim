@@ -176,7 +176,7 @@ export default translate()(class Kanban extends React.Component {
           'kanban'
         )
 
-        this.setState({ mustSave: true, isDrafAvailable: false })
+        this.setState({ mustSave: false, isDrafAvailable: false })
         // TODO handle VIEW / edit mode
         // TODO handle notify all
         break
