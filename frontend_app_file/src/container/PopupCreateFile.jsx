@@ -12,6 +12,8 @@ import {
   FILE_PREVIEW_STATE,
   TracimComponent,
   setupCommonRequestHeaders,
+  handleFetchResult,
+  postNewEmptyContent,
   putMyselfFileRead
 } from 'tracim_frontend_lib'
 import PopupProgressUpload from '../component/PopupProgressUpload.jsx'
@@ -84,14 +86,7 @@ class PopupCreateFile extends React.Component {
     if (uploadedFileFailedList.length === 0) {
       this.handleClose(false)
       if (state.fileToUploadList.length === 1) {
-        GLOBAL_dispatchEvent({
-          type: CUSTOM_EVENT.OPEN_CONTENT_URL,
-          data: {
-            workspaceId: uploadedFileList[0].content.workspace_id,
-            contentType: state.appName,
-            contentId: uploadedFileList[0].content.content_id
-          }
-        })
+        this.openContent(uploadedFileList[0].content)
       }
       return
     }
@@ -274,6 +269,17 @@ class PopupCreateFile extends React.Component {
     return state.fileToUploadList.some(f => f.errorMessage)
   }
 
+  openContent (content) {
+    GLOBAL_dispatchEvent({
+      type: CUSTOM_EVENT.OPEN_CONTENT_URL,
+      data: {
+        workspaceId: content.workspace_id,
+        contentType: this.state.appName,
+        contentId: content.content_id
+      }
+    })
+  }
+
   loadUploadFilePreview = (file) => {
     if (file.type.includes('image') && file.size <= 2000000) {
       const reader = new FileReader()
@@ -284,6 +290,31 @@ class PopupCreateFile extends React.Component {
         img.onerror = () => this.setState({ uploadFilePreview: FILE_PREVIEW_STATE.NO_FILE })
       }
       reader.readAsDataURL(file)
+    }
+  }
+
+  handleCreateBoardClick = async () => {
+    const label = window.prompt('Please enter the name of the board you want to create')
+    if (!label) return
+
+    const { state } = this
+
+    const response = await handleFetchResult(await postNewEmptyContent(
+      state.config.apiUrl,
+      state.workspaceId,
+      state.folderId || 0,
+      'file',
+      label + (label.endsWith('.kanban') ? '' : '.kanban')
+    ))
+
+    switch (response.apiResponse.status) {
+      case 200: {
+        this.handleClose(false)
+        this.openContent(response.body)
+        break
+      }
+      default:
+        this.sendGlobalFlashMessage(this.props.t('Error while creating the board'))
     }
   }
 
@@ -300,6 +331,7 @@ class PopupCreateFile extends React.Component {
         contentName={this.isValidateButtonDisabled() ? '' : 'allowValidate'} // hack to update the "disabled" state of the button
         onChangeContentName={() => {}}
         btnValidateLabel={props.t('Validate and create')}
+        onCreateBoardClick={this.handleCreateBoardClick}
         customStyle={{ top: '50%', transform: 'translateY(-50%)' }}
       >
         <div>

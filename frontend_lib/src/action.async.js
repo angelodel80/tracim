@@ -19,6 +19,13 @@ export const putEditContent = (apiUrl, workspaceId, contentId, appSlug, newTitle
     ...propertiesToAddToBody
   })
 
+export const postNewEmptyContent = (apiUrl, workspaceId, parentId, contentType, label) =>
+  baseFetch('POST', `${apiUrl}/workspaces/${workspaceId}/contents`, {
+    content_type: contentType,
+    parent_id: parentId || null,
+    label
+  })
+
 export const postNewComment = (apiUrl, workspaceId, contentId, newComment) =>
   baseFetch('POST', `${apiUrl}/workspaces/${workspaceId}/contents/${contentId}/comments`, {
     raw_content: newComment
@@ -90,6 +97,9 @@ export const getFolderDetail = (apiUrl, workspaceId, contentId) =>
 
 export const getFileContent = (apiUrl, workspaceId, contentId) =>
   baseFetch('GET', `${apiUrl}/workspaces/${workspaceId}/files/${contentId}`)
+
+export const getRawFileContent = (apiUrl, workspaceId, contentId, revisionId, filename) =>
+  baseFetch('GET', `${apiUrl}/workspaces/${workspaceId}/files/${contentId}/revisions/${revisionId}/raw/${filename}`)
 
 export const getWorkspaceContentList = (apiUrl, workspaceId) =>
   baseFetch('GET', `${apiUrl}/workspaces/${workspaceId}/contents?parent_ids=0`)

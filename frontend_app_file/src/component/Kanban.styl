@@ -1,0 +1,92 @@
+.file__contentpage__statewrapper__kanban
+  display flex
+  flex-direction column
+  height 100%
+
+  .react-kanban-board
+    flex 1
+
+  &__toolbar
+    background #eff0f1
+
+    button
+      font-size small
+      padding 3px 5px
+      border none
+      border-radius 0
+
+    [disabled]
+      display none
+
+    > :not(last-child)
+      border-right 1px solid gray
+
+  .react-kanban-column-header
+    display flex
+    flex-direction row
+    > :first-child
+      flex 1
+    > :last-child
+      display inline-block
+      border-radius 2px
+      cursor default
+
+      &:hover
+        transform scale(1.2)
+        color red
+        background #FCC
+
+  .react-kanban-column
+    padding 5px
+
+  &__columnHeader
+    display flex
+    flex-direction row
+    border-bottom 1px solid gray
+
+    > strong
+      flex 1
+      text-align center
+      display block
+      cursor pointer
+
+    > button
+      font-size small
+      padding 3px 5px
+      border none
+      border-radius 0
+
+  &__card
+    margin 5px
+    width 30ex
+    background white
+    border 1px solid back
+    box-shadow 0 0 3px black
+    border-radius 3px
+    background: rgba(0, 0, 0, 0.1)
+
+    &__title
+      text-align center
+      border-bottom 1px solid gray
+      display flex
+      flex-direction row
+      text-overflow elipsis
+
+      strong
+        flex 1
+        text-align center
+
+      > button
+        font-size small
+        padding 3px 5px
+        border none
+        border-radius 0
+
+    &__description
+      padding 5px
+      background white
+      overflow hidden
+      word-break break-word
+      overflow-wrap break-word
+      hyphens auto
+      min-height 1.5em
