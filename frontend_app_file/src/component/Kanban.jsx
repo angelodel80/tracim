@@ -108,7 +108,7 @@ export default translate()(class Kanban extends React.Component {
     )
   }
 
-  renderCard = (card, arg2, arg3) => {
+  renderCard = (card) => {
     // console.log("renderCard", card, arg2, arg3)
     return (
       <div className='file__contentpage__statewrapper__kanban__card'>
