@@ -8,6 +8,7 @@ import {
   PromptMessage,
   handleFetchResult,
   putFileContent,
+  LOCAL_STORAGE_FIELD,
   removeLocalStorageItem,
   getLocalStorageItem,
   setLocalStorageItem
@@ -33,9 +34,9 @@ export default translate()(class Kanban extends React.Component {
         ...JSON.parse(props.content.raw_content || '{}')
       },
       isDrafAvailable: !!getLocalStorageItem(
-        'rawContent',
+        'kanban',
         props.content,
-        'kanban'
+        LOCAL_STORAGE_FIELD.RAW_CONTENT
       )
     }
   }
@@ -52,7 +53,7 @@ export default translate()(class Kanban extends React.Component {
 
   handleRestoreDraft = () => {
     this.updateBoard(
-      JSON.parse(getLocalStorageItem('rawContent', this.props.content, 'kanban')),
+      JSON.parse(getLocalStorageItem('kanban', this.props.content, LOCAL_STORAGE_FIELD.RAW_CONTENT)),
       true
     )
     this.setState({ isDrafAvailable: false, mustSave: true })
@@ -61,7 +62,7 @@ export default translate()(class Kanban extends React.Component {
   handleDiscardChanges = () => {
     if (confirm(this.props.t('Are you sure you want to discard your changes?'))) {
       this.updateBoard(JSON.parse(this.props.content.raw_content || '{}'), true)
-      removeLocalStorageItem('rawContent', this.props.content, 'kanban')
+      removeLocalStorageItem('kanban', this.props.content, LOCAL_STORAGE_FIELD.RAW_CONTENT)
       this.setState({ mustSave: false, isDraftAvailable: false })
     }
   }
@@ -281,7 +282,7 @@ export default translate()(class Kanban extends React.Component {
     })
 
     if (!dontSaveDraftToLocalStorage) {
-      setLocalStorageItem('rawContent', this.props.content, 'kanban', JSON.stringify(newBoard))
+      setLocalStorageItem('kanban', this.props.content, LOCAL_STORAGE_FIELD.RAW_CONTENT, JSON.stringify(newBoard))
     }
   }
 
