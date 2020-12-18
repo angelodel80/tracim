@@ -3,6 +3,7 @@ import { translate } from 'react-i18next'
 import { v4 as uuidv4 } from 'uuid'
 import Board from '@lourenci/react-kanban'
 import '@lourenci/react-kanban/dist/styles.css'
+import KanbanCardEditor from './KanbanCardEditor.jsx'
 import {
   IconButton,
   PromptMessage,
@@ -23,7 +24,7 @@ function moveElem (array, fromPosition, toPosition, elem) {
   return a
 }
 
-export default translate()(class Kanban extends React.Component {
+class Kanban extends React.Component {
   constructor (props) {
     super(props)
     this.state = {
@@ -88,7 +89,7 @@ export default translate()(class Kanban extends React.Component {
           ...col,
           cards: col.cards.map(
             card => (
-              oldCard === card
+              oldCard.id === card.id
                 ? updatedCard
                 : card
             )
@@ -110,9 +111,11 @@ export default translate()(class Kanban extends React.Component {
   }
 
   renderCard = (card) => {
-    // console.log("renderCard", card, arg2, arg3)
     return (
-      <div className='file__contentpage__statewrapper__kanban__card'>
+      <div
+        style={{ background: card.color }}
+        className='file__contentpage__statewrapper__kanban__card'
+      >
         <div className='file__contentpage__statewrapper__kanban__card__title'>
           <strong onClick={() => this.handleEditCardTitle(card)}>{card.title}</strong>
           <IconButton
@@ -131,24 +134,24 @@ export default translate()(class Kanban extends React.Component {
     )
   }
 
-  handleAddCardClicked (column) {
-    const title = prompt('Please enter the title of the card')
-    if (title) {
-      const description = prompt('Please enter the content of the card')
+  handleCardAdd (column) {
+    this.setState({
+      editCard: {
+        card: {},
+        columnId: column.id
+      }
+    })
+  }
 
-      this.addCardToColumn(column, {
-        id: uuidv4(),
-        title,
-        description
-      })
-    }
+  handleCardEdited () {
+
   }
 
   addCardToColumn (column, card) {
     this.updateColumns(
       this.state.board.columns.map(
         col => (
-          col === column
+          col.id === column.id
             ? { ...col, cards: [...col.cards, card] }
             : col
         )
@@ -156,7 +159,7 @@ export default translate()(class Kanban extends React.Component {
     )
   }
 
-  handleSaveClicked = async () => {
+  handleSave = async () => {
     const { props } = this
     const fetchResultSaveKanban = await handleFetchResult(
       await putFileContent(
@@ -172,7 +175,7 @@ export default translate()(class Kanban extends React.Component {
     switch (fetchResultSaveKanban.apiResponse.status) {
       case 200: {
         removeLocalStorageItem(
-          'rawContent',
+          LOCAL_STORAGE_FIELD.RAW_CONTENT,
           props.content,
           'kanban'
         )
@@ -198,8 +201,7 @@ export default translate()(class Kanban extends React.Component {
     }
   }
 
-  handleAddColumnClicked = (board, column) => {
-    // console.log("handleAddColumnClicked", board, column)
+  handleAddColumn = () => {
     const title = prompt('Please enter the name of the new column')
     if (!title) {
       return
@@ -212,17 +214,14 @@ export default translate()(class Kanban extends React.Component {
   }
 
   handleCardRemove = (card) => {
-    // console.log("handleCardRemove", card)
     this.removeCard(card)
   }
 
   handleColumnRemove = (column) => {
-    // console.log("handleColumnRemove", column)
     this.updateColumns(this.state.board.columns.filter(col => col !== column))
   }
 
   handleCardDragEnd = (card, { fromColumnId, fromPosition }, { toColumnId, toPosition }) => {
-    // console.log("handleCardDragEnd", card, { fromColumnId, fromPosition }, {toColumnId, toPosition })
     this.updateColumns(
       this.state.board.columns.map(
         col => (
@@ -247,11 +246,9 @@ export default translate()(class Kanban extends React.Component {
         )
       )
     )
-    //     this.updateBoard(board)
   }
 
   handleNewColumnConfirm = (column) => {
-    // console.log("handleNewColumnConfirm", column)
     const newColumn = { ...column, id: uuidv4() }
 
     this.updateColumns([
@@ -315,7 +312,7 @@ export default translate()(class Kanban extends React.Component {
           text=''
           icon='plus'
           tooltip={this.props.t('Add a card')}
-          onClick={() => this.handleAddCardClicked(column)}
+          onClick={() => this.handleCardAdd(column)}
         />
         <IconButton
           text=''
@@ -324,6 +321,10 @@ export default translate()(class Kanban extends React.Component {
         />
       </div>
     )
+  }
+
+  handleCardEditCancel = () => {
+    this.setState({ editCard: null })
   }
 
   render () {
@@ -346,13 +347,13 @@ export default translate()(class Kanban extends React.Component {
             <IconButton
               text={props.t('column')}
               icon='plus'
-              onClick={this.handleAddColumnClicked}
+              onClick={this.handleAddColumn}
             />
             <IconButton
               disabled={!state.mustSave}
               icon='save'
               text={props.t('Save')}
-              onClick={this.handleSaveClicked}
+              onClick={this.handleSave}
             />
             <IconButton
               disabled={!state.mustSave}
@@ -381,7 +382,16 @@ export default translate()(class Kanban extends React.Component {
         >
           {state.board}
         </Board>
+        {state.editCard && (
+          <KanbanCardEditor
+            card={state.editCard.card}
+            onValidate={this.handleCardEdited}
+            onCancel={this.handleCardEditCancel}
+          />
+        )}
       </div>
     )
   }
-})
+}
+
+export default translate()(Kanban)
