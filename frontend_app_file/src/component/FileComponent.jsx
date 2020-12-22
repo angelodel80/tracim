@@ -67,7 +67,7 @@ export class FileComponent extends React.Component {
 
   render () {
     const { props } = this
-    const isKanban = props.content.label && props.content.label.endsWith('.kanban')
+    const isKanban = props.content.file_extension === '.kanban'
     return (
       <div
         className={classnames(

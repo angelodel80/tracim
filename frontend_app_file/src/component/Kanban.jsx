@@ -10,6 +10,7 @@ import {
   handleFetchResult,
   putFileContent,
   LOCAL_STORAGE_FIELD,
+  CardPopup,
   removeLocalStorageItem,
   getLocalStorageItem,
   setLocalStorageItem
@@ -30,6 +31,7 @@ class Kanban extends React.Component {
     this.state = {
       loading: false,
       mustSave: false,
+      colorPickerEnabledForColumnId: null,
       board: {
         columns: [],
         ...JSON.parse(props.content.raw_content || '{}')
@@ -71,25 +73,35 @@ class Kanban extends React.Component {
   handleEditCardTitle = (card) => {
     const title = prompt(this.props.t('Please enter the new title of this card'), card.title || '')
     if (title) {
-      this.updateCard(card, { ...card, title })
+      this.updateCard({ ...card, title })
     }
   }
 
   handleEditCardContent = (card) => {
     const description = prompt(this.props.t('Please enter the new content of this card'), card.description || '')
     if (description) {
-      this.updateCard(card, { ...card, description })
+      this.updateCard({ ...card, description })
     }
   }
 
-  updateCard (oldCard, updatedCard) {
+  updateColumn (column) {
+    this.updateColumns(
+      this.state.board.columns.map(
+        col => col.id === column.id
+          ? column
+          : col
+      )
+    )
+  }
+
+  updateCard (updatedCard) {
     this.updateColumns(
       this.state.board.columns.map(
         col => ({
           ...col,
           cards: col.cards.map(
             card => (
-              oldCard.id === card.id
+              updatedCard.id === card.id
                 ? updatedCard
                 : card
             )
@@ -113,11 +125,17 @@ class Kanban extends React.Component {
   renderCard = (card) => {
     return (
       <div
-        style={{ background: card.color }}
+        style={{ backgroundColor: card.bgColor || '' }}
         className='file__contentpage__statewrapper__kanban__card'
       >
         <div className='file__contentpage__statewrapper__kanban__card__title'>
           <strong onClick={() => this.handleEditCardTitle(card)}>{card.title}</strong>
+          <IconButton
+            text=''
+            icon='pencil'
+            tooltip={this.props.t('Change the color of this card')}
+            onClick={() => this.handleCardEditClick(card)}
+          />
           <IconButton
             text=''
             icon='trash'
@@ -138,13 +156,26 @@ class Kanban extends React.Component {
     this.setState({
       editCard: {
         card: {},
-        columnId: column.id
+        column
       }
     })
   }
 
-  handleCardEdited () {
+  handleCardEditClick (card) {
+    this.setState({
+      editCard: { card }
+    })
+  }
 
+  handleCardEdited = (card) => {
+    if (card.id) {
+      this.updateCard(card)
+    } else {
+      this.addCardToColumn(this.state.editCard.column, { ...card, id: uuidv4() })
+    }
+    this.setState({
+      editCard: null
+    })
   }
 
   addCardToColumn (column, card) {
@@ -304,22 +335,53 @@ class Kanban extends React.Component {
     return column
   }
 
+  handleColumnColorChange = (column, bgColor) => {
+    this.updateColumn({ ...column, bgColor })
+  }
+
+  handleCardColorChange = (card, e) => {
+    this.updateCard({ ...card, bgColor: e.target.value })
+  }
+
+  handleColumnColorClick = (column) => {
+    this.setState({
+      colorPickerEnabledForColumnId: this.state.colorPickerEnabledForColumnId === column.id
+        ? null
+        : column.id
+    })
+  }
+
   renderColumnHeader = (column) => {
     return (
-      <div className='file__contentpage__statewrapper__kanban__columnHeader'>
-        <strong onClick={() => this.handleColumnRenameClick(column)}>{column.title}</strong>
-        <IconButton
-          text=''
-          icon='plus'
-          tooltip={this.props.t('Add a card')}
-          onClick={() => this.handleCardAdd(column)}
-        />
-        <IconButton
-          text=''
-          icon='trash'
-          onClick={() => this.handleColumnRemove(column)}
-        />
-      </div>
+      <>
+        <div
+          className='file__contentpage__statewrapper__kanban__columnHeader'
+          style={{ backgroundColor: column.bgColor || '' }}
+        >
+          <strong onClick={() => this.handleColumnRenameClick(column)}>{column.title}</strong>
+          <IconButton
+            text=''
+            icon='paint-brush'
+            tooltip={this.props.t('Change the color of this column')}
+            onClick={() => this.handleColumnColorClick(column)}
+          />
+          <IconButton
+            text=''
+            icon='plus'
+            tooltip={this.props.t('Add a card')}
+            onClick={() => this.handleCardAdd(column)}
+          />
+          <IconButton
+            text=''
+            icon='trash'
+            tooltip={this.props.t('Remove this column')}
+            onClick={() => this.handleColumnRemove(column)}
+          />
+        </div>
+        {(this.state.colorPickerEnabledForColumnId === column.id && (
+          <input type='color' onChange={(e) => this.handleColumnColorChange(column, e.target.value)} />
+        ))}
+      </>
     )
   }
 
@@ -383,11 +445,17 @@ class Kanban extends React.Component {
           {state.board}
         </Board>
         {state.editCard && (
-          <KanbanCardEditor
-            card={state.editCard.card}
-            onValidate={this.handleCardEdited}
-            onCancel={this.handleCardEditCancel}
-          />
+          <CardPopup
+            customClass='file__kanbanCardEditor'
+            customHeaderClass='primaryColorBg'
+            onClose={this.handleCardEditCancel}
+          >
+            <KanbanCardEditor
+              card={state.editCard.card}
+              onValidate={this.handleCardEdited}
+              onCancel={this.handleCardEditCancel}
+            />
+          </CardPopup>
         )}
       </div>
     )

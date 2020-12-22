@@ -217,7 +217,6 @@ export {
   buildContentPathBreadcrumbs,
   createSpaceTree,
   DropdownMenu,
-  getContentPath,
   handleInvalidMentionInComment,
   naturalCompareLabels,
   sortWorkspaceList,
@@ -328,6 +327,5 @@ export {
   TextInput,
   DistanceDate,
   Icon,
-  getWorkspaceContent,
   PAGE
 }

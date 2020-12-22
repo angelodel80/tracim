@@ -304,7 +304,8 @@ class PopupCreateFile extends React.Component {
       state.workspaceId,
       state.folderId || 0,
       'file',
-      label + (label.endsWith('.kanban') ? '' : '.kanban')
+      label,
+      '.kanban'
     ))
 
     switch (response.apiResponse.status) {
