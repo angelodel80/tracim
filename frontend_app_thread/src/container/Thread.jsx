@@ -19,8 +19,6 @@ import {
   getLocalStorageItem,
   ROLE,
   CUSTOM_EVENT,
-  LOCAL_STORAGE_FIELD,
-  getLocalStorageItem,
   buildHeadTitle,
   addRevisionFromTLM,
   RefreshWarningMessage,
