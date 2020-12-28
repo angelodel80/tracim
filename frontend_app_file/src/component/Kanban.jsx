@@ -1,3 +1,5 @@
+/* global alert, confirm, prompt */
+
 import React from 'react'
 import { translate } from 'react-i18next'
 import { v4 as uuidv4 } from 'uuid'
