@@ -177,6 +177,7 @@ class Kanban extends React.Component {
           <IconButton
             text=''
             icon='trash'
+            tooltip={this.props.t('Remove this card')}
             onClick={() => this.removeCard(card)}
           />
         </div>

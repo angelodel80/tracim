@@ -570,7 +570,13 @@ class ContentCreation(object):
     Content creation model
     """
 
-    def __init__(self, label: str, content_type: str, parent_id: Optional[int] = None, file_extension: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        label: str,
+        content_type: str,
+        parent_id: Optional[int] = None,
+        file_extension: Optional[str] = None,
+    ) -> None:
         self.label = label
         self.content_type = content_type
         self.parent_id = parent_id or None

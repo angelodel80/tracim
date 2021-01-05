@@ -36,6 +36,7 @@ if (!global.window && !global.document) {
   global.CustomEvent = () => {}
   global.fetch = require('node-fetch')
   global.GLOBAL_excludedNotifications = []
+  global.FormData = window.FormData
 }
 
 Enzyme.configure({ adapter: new Adapter() })

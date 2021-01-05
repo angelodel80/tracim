@@ -1310,8 +1310,7 @@ class ContentCreationSchema(marshmallow.Schema):
         validate=not_empty_string_validator,
     )
     file_extension = StrippedString(
-        example=".txt",
-        description="File extension of the content to create"
+        example=".txt", description="File extension of the content to create"
     )
     content_type = StrippedString(
         required=True, example="html-document", validate=all_content_types_validator
