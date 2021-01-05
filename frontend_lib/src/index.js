@@ -176,7 +176,7 @@ export {
   getWorkspaceContentList,
   putFileIsDeleted,
   getFileRevision,
-  putFileContent,
+  putRawFileContent,
   putMyselfFileRead,
   getContentComment,
   getContent,

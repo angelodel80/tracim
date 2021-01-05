@@ -1,10 +1,26 @@
+@import '~tracim_frontend_lib/src/css/Variable.styl'
+
 .file__contentpage__statewrapper__kanban
   display flex
   flex-direction column
   height 100%
 
-  .react-kanban-board
+  &.fullscreen
+    position fixed
+    top headerHeight
+    left 0
+    width 100%
+    height calc(100% - 61px)
+    z-index 1
+    background offWhite
+
+  &__wrapper
     flex 1
+    overflow auto
+
+    .react-kanban-board
+      overflow-y visible !important
+      overflow-x visible
 
   &__toolbar
     background #eff0f1
@@ -18,8 +34,13 @@
     [disabled]
       display none
 
-    > :not(last-child)
+    .iconbutton:not(last-child)
       border-right 1px solid gray
+
+    &__title
+      display inline-block
+      padding-left 1em
+      color darkGrey
 
   .react-kanban-column-header
     display flex
@@ -49,6 +70,8 @@
       text-align center
       display block
       cursor pointer
+      overflow hidden
+      text-overflow ellipsis
 
     button
       font-size small
@@ -94,6 +117,18 @@
   &__KanbanCardEditor
     width 100%
 
+    [type=checkbox]
+        margin-right 1ex
+
+    textarea
+        resize both
+
+    label
+        white-space pre
+
+    input
+        vertical-align middle
+
     &__title
       margin-top -26px
       margin-bottom 10px
@@ -113,6 +148,7 @@
         > span
           display table-cell
           padding-right 1ex
+          vertical-align top
 
           &:last-child
             width 100%

@@ -89,6 +89,8 @@
       "fetch",
       "Element",
       "EventSource",
+      "File",
+      "FormData",
       "CustomEvent",
       "HTMLElement",
       "DOMParser",

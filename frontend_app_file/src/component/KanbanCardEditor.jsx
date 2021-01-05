@@ -11,6 +11,7 @@ function KanbanCardEditor (props) {
   const [bgColor, setBgColor] = React.useState(card.bgColor || '')
   const [deadline, setDeadline] = React.useState(card.deadline || '')
   const [duration, setDuration] = React.useState(card.duration || '')
+  const [htmlEnabledForDescription, setHtmlEnabledForDescription] = React.useState(!!card.htmlEnabledForDescription)
 
   function validate (e) {
     e.preventDefault()
@@ -18,6 +19,7 @@ function KanbanCardEditor (props) {
       ...card,
       title,
       description,
+      htmlEnabledForDescription,
       bgColor: colorEnabled ? bgColor : '',
       deadline,
       duration
@@ -45,7 +47,7 @@ function KanbanCardEditor (props) {
               <label htmlFor='file__contentpage__statewrapper__kanban__KanbanCardEditor__title'>{props.t('Title:') + ' '}</label>
             </span>
             <span>
-              <input autoFocus id='file__contentpage__statewrapper__kanban__KanbanCardEditor__title' type='text' value={title} onChange={(e) => setTitle(e.target.value)} />
+              <input autoFocus={!props.focusOnDescription} id='file__contentpage__statewrapper__kanban__KanbanCardEditor__title' type='text' value={title} onChange={(e) => setTitle(e.target.value)} />
             </span>
           </p>
           <p>
@@ -53,7 +55,9 @@ function KanbanCardEditor (props) {
               <label htmlFor='file__contentpage__statewrapper__kanban__KanbanCardEditor__description'>{props.t('Description:') + ' '}</label>
             </span>
             <span>
-              <textarea id='file__contentpage__statewrapper__kanban__KanbanCardEditor__description' value={description || ''} onChange={(e) => setDescription(e.target.value)} />
+              <textarea autoFocus={props.focusOnDescription} id='file__contentpage__statewrapper__kanban__KanbanCardEditor__description' value={description || ''} onChange={(e) => setDescription(e.target.value)} />
+              <br />
+              <label><input type='checkbox' checked={htmlEnabledForDescription} onChange={(e) => setHtmlEnabledForDescription(e.target.checked)} />{props.t('Enable HTML')}</label>
             </span>
           </p>
           <p>

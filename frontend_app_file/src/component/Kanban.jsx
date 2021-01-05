@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { translate } from 'react-i18next'
+import classnames from 'classnames'
 import { v4 as uuidv4 } from 'uuid'
 import Board from '@lourenci/react-kanban'
 import '@lourenci/react-kanban/dist/styles.css'
@@ -10,7 +11,8 @@ import {
   IconButton,
   PromptMessage,
   handleFetchResult,
-  putFileContent,
+  putRawFileContent,
+  getRawFileContent,
   LOCAL_STORAGE_FIELD,
   CardPopup,
   removeLocalStorageItem,
@@ -19,6 +21,9 @@ import {
 } from 'tracim_frontend_lib'
 
 require('./Kanban.styl')
+
+const KANBAN_MIME_TYPE = 'application/json'
+const KANBAN_FILE_EXTENSION = '.kanban'
 
 function moveElem (array, fromPosition, toPosition, elem) {
   const a = array.slice()
@@ -31,13 +36,12 @@ class Kanban extends React.Component {
   constructor (props) {
     super(props)
     this.state = {
-      loading: false,
+      loading: props.content.current_revision_type !== 'creation',
+      error: false,
+      fullscreen: false,
       mustSave: false,
       colorPickerEnabledForColumnId: null,
-      board: {
-        columns: [],
-        ...JSON.parse(props.content.raw_content || '{}')
-      },
+      board: { columns: [] },
       isDrafAvailable: !!getLocalStorageItem(
         'kanban',
         props.content,
@@ -46,13 +50,42 @@ class Kanban extends React.Component {
     }
   }
 
+  componentDidMount () {
+    if (this.props.content.current_revision_type !== 'creation') this.loadBoardContent()
+  }
+
+  async loadBoardContent () {
+    const { props } = this
+    const { content } = props
+
+    const fetchRawFileContent = await handleFetchResult(
+      await getRawFileContent(
+        props.config.apiUrl,
+        content.workspace_id,
+        content.content_id,
+        content.current_revision_id,
+        content.label + KANBAN_FILE_EXTENSION
+      ),
+      true
+    )
+
+    if (fetchRawFileContent.apiResponse.ok) {
+      this.setState({
+        loading: false,
+        board: {
+          columns: [],
+          ...JSON.parse(fetchRawFileContent.body || '{}')
+        }
+      })
+    } else {
+      this.setState({ loading: false, error: true })
+    }
+  }
+
   componentDidUpdate (prevProps) {
     if (this.props.content.current_revision_id !== prevProps.content.current_revision_id) {
-      // TODO handle the "Refresh?" button
-      this.updateBoard({
-        ...this.state.board,
-        ...JSON.parse(this.props.content.raw_content || '{}')
-      }, true)
+      this.setState({ loading: true })
+      this.loadBoardContent()
     }
   }
 
@@ -72,6 +105,10 @@ class Kanban extends React.Component {
     }
   }
 
+  handleClickFullscreen = () => {
+    this.setState({ fullscreen: !this.state.fullscreen })
+  }
+
   handleEditCardTitle = (card) => {
     const title = prompt(this.props.t('Please enter the new title of this card'), card.title || '')
     if (title) {
@@ -80,10 +117,9 @@ class Kanban extends React.Component {
   }
 
   handleEditCardContent = (card) => {
-    const description = prompt(this.props.t('Please enter the new content of this card'), card.description || '')
-    if (description) {
-      this.updateCard({ ...card, description })
-    }
+    this.setState({
+      editCard: { card, focusOnDescription: true }
+    })
   }
 
   updateColumn (column) {
@@ -148,7 +184,7 @@ class Kanban extends React.Component {
           className='file__contentpage__statewrapper__kanban__card__description'
           onClick={() => this.handleEditCardContent(card)}
         >
-          {card.description}
+          {card.htmlEnabledForDescription ? <div dangerouslySetInnerHTML={{ __html: card.description }} /> : card.description}
         </div>
       </div>
     )
@@ -195,42 +231,28 @@ class Kanban extends React.Component {
   handleSave = async () => {
     const { props } = this
     const fetchResultSaveKanban = await handleFetchResult(
-      await putFileContent(
+      await putRawFileContent(
         props.config.apiUrl,
         props.content.workspace_id,
         props.content.content_id,
-        props.content.label,
-        JSON.stringify(this.state.board)
+        props.content.label + KANBAN_FILE_EXTENSION,
+        JSON.stringify(this.state.board),
+        KANBAN_MIME_TYPE
       )
     )
 
-    // TODO factorize with the code doing the same thing in html doc
-    switch (fetchResultSaveKanban.apiResponse.status) {
-      case 200: {
-        removeLocalStorageItem(
-          LOCAL_STORAGE_FIELD.RAW_CONTENT,
-          props.content,
-          'kanban'
-        )
-
-        this.setState({ mustSave: false, isDrafAvailable: false })
-        // TODO handle VIEW / edit mode
-        // TODO handle notify all
-        break
+    if (fetchResultSaveKanban.ok) {
+      removeLocalStorageItem('kanban', this.props.content, LOCAL_STORAGE_FIELD.RAW_CONTENT)
+      this.setState({ mustSave: false, isDrafAvailable: false })
+    } else {
+      switch (fetchResultSaveKanban.body.code) {
+        case 2044:
+          alert(props.t('You must change the status or restore this kanban board before any change'))
+          break
+        default:
+          alert(props.t('Error while saving the new version'))
+          break
       }
-      case 400:
-        switch (fetchResultSaveKanban.body.code) {
-          case 2044:
-            alert(props.t('You must change the status or restore this kanban board before any change'))
-            break
-          default:
-            alert(props.t('Error while saving the new version'))
-            break
-        }
-        break
-      default:
-        alert(props.t('Error while saving the new version'))
-        break
     }
   }
 
@@ -381,7 +403,10 @@ class Kanban extends React.Component {
           />
         </div>
         {(this.state.colorPickerEnabledForColumnId === column.id && (
-          <input type='color' onChange={(e) => this.handleColumnColorChange(column, e.target.value)} />
+          <>
+            <input type='color' onChange={(e) => this.handleColumnColorChange(column, e.target.value)} />
+            <input type='button' style={{ fontSize: 'small' }} value={this.props.t('Hide')} onClick={() => this.setState({ colorPickerEnabledForColumnId: null })} />
+          </>
         ))}
       </>
     )
@@ -395,7 +420,7 @@ class Kanban extends React.Component {
     const { props, state } = this
 
     return (
-      <div className='file__contentpage__statewrapper__kanban'>
+      <div className={classnames('file__contentpage__statewrapper__kanban', { fullscreen: state.fullscreen })}>
         {state.isDrafAvailable && (
           <PromptMessage
             msg={props.t('You have a pending draft')}
@@ -406,58 +431,74 @@ class Kanban extends React.Component {
           />
         )}
 
-        <p>
-          <div className='file__contentpage__statewrapper__kanban__toolbar'>
-            <IconButton
-              text={props.t('column')}
-              icon='plus'
-              onClick={this.handleAddColumn}
-            />
-            <IconButton
-              disabled={!state.mustSave}
-              icon='save'
-              text={props.t('Save')}
-              onClick={this.handleSave}
-            />
-            <IconButton
-              disabled={!state.mustSave}
-              icon='trash'
-              text={props.t('Discard changes')}
-              onClick={this.handleDiscardChanges}
-            />
-          </div>
-        </p>
-        {state.loading && <span> Loading, please wait… </span>}
-        <Board
-          allowAddColumn
-          allowRemoveColumn
-          allowRenameColumn
-          allowAddCard
-          allowRemoveCard
-          onCardDragEnd={this.handleCardDragEnd}
-          onColumnDragEnd={this.handleColumnDragEnd}
-          onNewColumnConfirm={this.handleNewColumnConfirm}
-          onColumnNew={this.handleColumnNew}
-          onColumnRemove={this.handleColumnRemove}
-          onCardRemove={this.handleCardRemove}
-          onColumnRename={this.handleColumnRename}
-          renderColumnHeader={this.renderColumnHeader}
-          renderCard={this.renderCard}
-        >
-          {state.board}
-        </Board>
-        {state.editCard && (
-          <CardPopup
-            customClass='file__kanbanCardEditor'
-            customHeaderClass='primaryColorBg'
-            onClose={this.handleCardEditCancel}
-          >
-            <KanbanCardEditor
-              card={state.editCard.card}
-              onValidate={this.handleCardEdited}
-              onCancel={this.handleCardEditCancel}
-            />
-          </CardPopup>
+        <div className='file__contentpage__statewrapper__kanban__toolbar'>
+          <IconButton
+            text={props.t('column')}
+            icon='plus'
+            onClick={this.handleAddColumn}
+          />
+          <IconButton
+            disabled={!state.mustSave}
+            icon='save'
+            text={props.t('Save')}
+            onClick={this.handleSave}
+          />
+          <IconButton
+            disabled={!state.mustSave}
+            icon='trash'
+            text={props.t('Discard changes')}
+            onClick={this.handleDiscardChanges}
+          />
+          <IconButton
+            icon='arrows-alt'
+            text={props.t('Fullscreen')}
+            onClick={this.handleClickFullscreen}
+          />
+          {state.fullscreen && (<span className='file__contentpage__statewrapper__kanban__toolbar__title'>{props.t('Board: {{label}}', { label: props.content.label })}</span>)}
+        </div>
+        {(state.loading
+          ? <span>{props.t('Loading, please wait…')}</span>
+          : (state.error
+            ? <span style={{ color: '#FF3333' }}> {props.t('Error while loading the board.')} </span> // FIXME inline style
+            : (
+              <>
+                <div className='file__contentpage__statewrapper__kanban__wrapper'>
+                  <Board
+                    allowAddColumn
+                    allowRemoveColumn
+                    allowRenameColumn
+                    allowAddCard
+                    allowRemoveCard
+                    onCardDragEnd={this.handleCardDragEnd}
+                    onColumnDragEnd={this.handleColumnDragEnd}
+                    onNewColumnConfirm={this.handleNewColumnConfirm}
+                    onColumnNew={this.handleColumnNew}
+                    onColumnRemove={this.handleColumnRemove}
+                    onCardRemove={this.handleCardRemove}
+                    onColumnRename={this.handleColumnRename}
+                    renderColumnHeader={this.renderColumnHeader}
+                    renderCard={this.renderCard}
+                  >
+                    {state.board}
+                  </Board>
+                </div>
+                {state.editCard && (
+                  <CardPopup
+                    customClass='file__kanbanCardEditor'
+                    customHeaderClass='primaryColorBg'
+                    onClose={this.handleCardEditCancel}
+                  >
+                    <KanbanCardEditor
+                      card={state.editCard.card}
+                      focusOnDescription={state.editCard.focusOnDescription}
+                      onValidate={this.handleCardEdited}
+                      onCancel={this.handleCardEditCancel}
+                    />
+                  </CardPopup>
+                )}
+              </>
+            )
+          )
         )}
       </div>
     )
